@@ -34,11 +34,11 @@ namespace solidity::yul::test
 
 typedef std::pair<std::string, std::string> Edge;
 
-struct Vertex {
+struct TestVertex {
 	std::string name;
-	std::vector<std::shared_ptr<Vertex>> successors;
+	std::vector<std::shared_ptr<TestVertex>> successors;
 
-	bool operator<(Vertex const& _other) const
+	bool operator<(TestVertex const& _other) const
 	{
 		return name < _other.name;
 	}
@@ -46,7 +46,7 @@ struct Vertex {
 
 struct ForEachVertexSuccessorTest {
 	template<typename Callable>
-	void operator()(Vertex _v, Callable&& _callable) const
+	void operator()(TestVertex _v, Callable&& _callable) const
 	{
 		for (auto const& w: _v.successors)
 			_callable(*w);
@@ -66,7 +66,7 @@ struct ImmediateDominatorTest
 		soltestAssert(!_vertices.empty() && !_edges.empty());
 
 		for (std::string name: _vertices)
-			vertices.insert(make_pair(name, std::make_shared<Vertex>(Vertex{name, std::vector<std::shared_ptr<Vertex>>{}})));
+			vertices.insert(make_pair(name, std::make_shared<TestVertex>(TestVertex{name, std::vector<std::shared_ptr<TestVertex>>{}})));
 
 		soltestAssert(vertices.size() == _vertices.size());
 
@@ -81,8 +81,8 @@ struct ImmediateDominatorTest
 	}
 
 	size_t numVertices = 0;
-	std::shared_ptr<Vertex> entry = nullptr;
-	std::map<std::string, std::shared_ptr<Vertex>> vertices;
+	std::shared_ptr<TestVertex> entry = nullptr;
+	std::map<std::string, std::shared_ptr<TestVertex>> vertices;
 	std::vector<size_t> expectedIdom;
 	std::map<std::string, size_t> expectedDFSIndices;
 	std::map<size_t, std::vector<size_t>> expectedDominatorTree;
@@ -91,24 +91,24 @@ struct ImmediateDominatorTest
 class DominatorFixture
 {
 protected:
-	std::map<std::string, size_t> toDFSIndices(std::map<Vertex, size_t> const& _vertexIndices)
+	std::map<std::string, size_t> toDFSIndices(std::map<TestVertex, size_t> const& _vertexIndices)
 	{
-		auto convertIndex = [](std::pair<Vertex, size_t> const& _pair) -> std::pair<std::string, size_t>
+		auto convertIndex = [](std::pair<TestVertex, size_t> const& _pair) -> std::pair<std::string, size_t>
 		{
 			return {_pair.first.name, _pair.second};
 		};
 		return _vertexIndices | ranges::views::transform(convertIndex) | ranges::to<std::map<std::string, size_t>>;
 	}
 
-	std::vector<std::string> dominatorsByVertexName(std::vector<Vertex const*> const& _dominators)
+	std::vector<std::string> dominatorsByVertexName(std::vector<TestVertex const*> const& _dominators)
 	{
-		return _dominators | ranges::views::transform([](Vertex const* d){
+		return _dominators | ranges::views::transform([](TestVertex const* d){
 			return d->name;
 		}) | ranges::to<std::vector<std::string>>;
 	}
 };
 
-typedef Dominator<Vertex, ForEachVertexSuccessorTest> DominatorFinder;
+typedef DominatorFinder<TestVertex, ForEachVertexSuccessorTest> TestDominatorFinder;
 
 BOOST_AUTO_TEST_SUITE(Dominators)
 
@@ -162,7 +162,7 @@ BOOST_FIXTURE_TEST_CASE(immediate_dominator_1, DominatorFixture)
 		}
 	);
 
-	DominatorFinder dominatorFinder(*test.entry, test.numVertices);
+	TestDominatorFinder dominatorFinder(*test.entry, test.numVertices);
 	BOOST_TEST(toDFSIndices(dominatorFinder.vertexIndices()) == test.expectedDFSIndices);
 	BOOST_TEST(dominatorFinder.immediateDominators() == test.expectedIdom);
 	BOOST_TEST(dominatorFinder.dominatorTree() == test.expectedDominatorTree);
@@ -207,7 +207,7 @@ BOOST_FIXTURE_TEST_CASE(immediate_dominator_2, DominatorFixture)
 			{4, {5, 6}}
 		}
 	);
-	DominatorFinder dominatorFinder(*test.entry, test.numVertices);
+	TestDominatorFinder dominatorFinder(*test.entry, test.numVertices);
 	BOOST_TEST(toDFSIndices(dominatorFinder.vertexIndices()) == test.expectedDFSIndices);
 	BOOST_TEST(dominatorFinder.immediateDominators() == test.expectedIdom);
 	BOOST_TEST(dominatorFinder.dominatorTree() == test.expectedDominatorTree);
@@ -275,7 +275,7 @@ BOOST_FIXTURE_TEST_CASE(immediate_dominator_3, DominatorFixture)
 			{5, {8}}
 		}
 	);
-	DominatorFinder dominatorFinder(*test.entry, test.numVertices);
+	TestDominatorFinder dominatorFinder(*test.entry, test.numVertices);
 	BOOST_TEST(toDFSIndices(dominatorFinder.vertexIndices()) == test.expectedDFSIndices);
 	BOOST_TEST(dominatorFinder.immediateDominators() == test.expectedIdom);
 	BOOST_TEST(dominatorFinder.dominatorTree() == test.expectedDominatorTree);
@@ -333,7 +333,7 @@ BOOST_FIXTURE_TEST_CASE(langauer_tarjan_p122_fig1, DominatorFixture)
 			{11, {12}}
 		}
 	);
-	DominatorFinder dominatorFinder(*test.entry, test.numVertices);
+	TestDominatorFinder dominatorFinder(*test.entry, test.numVertices);
 	BOOST_TEST(toDFSIndices(dominatorFinder.vertexIndices()) == test.expectedDFSIndices);
 	BOOST_TEST(dominatorFinder.immediateDominators() == test.expectedIdom);
 	BOOST_TEST(dominatorFinder.dominatorTree() == test.expectedDominatorTree);
@@ -381,7 +381,7 @@ BOOST_FIXTURE_TEST_CASE(loukas_georgiadis, DominatorFixture)
 			{0, {1, 2, 3, 4, 5, 6, 7, 8, 9}}
 		}
 	);
-	DominatorFinder dominatorFinder(*test.entry, test.numVertices);
+	TestDominatorFinder dominatorFinder(*test.entry, test.numVertices);
 	BOOST_TEST(toDFSIndices(dominatorFinder.vertexIndices()) == test.expectedDFSIndices);
 	BOOST_TEST(dominatorFinder.immediateDominators() == test.expectedIdom);
 	BOOST_TEST(dominatorFinder.dominatorTree() == test.expectedDominatorTree);
@@ -445,7 +445,7 @@ BOOST_FIXTURE_TEST_CASE(itworst, DominatorFixture)
 			{8, {9}}
 		}
 	);
-	DominatorFinder dominatorFinder(*test.entry, test.numVertices);
+	TestDominatorFinder dominatorFinder(*test.entry, test.numVertices);
 	BOOST_TEST(toDFSIndices(dominatorFinder.vertexIndices()) == test.expectedDFSIndices);
 	BOOST_TEST(dominatorFinder.immediateDominators() == test.expectedIdom);
 	BOOST_TEST(dominatorFinder.dominatorTree() == test.expectedDominatorTree);
@@ -494,7 +494,7 @@ BOOST_FIXTURE_TEST_CASE(idfsquad, DominatorFixture)
 			{8, {9}}
 		}
 	);
-	DominatorFinder dominatorFinder(*test.entry, test.numVertices);
+	TestDominatorFinder dominatorFinder(*test.entry, test.numVertices);
 	BOOST_TEST(toDFSIndices(dominatorFinder.vertexIndices()) == test.expectedDFSIndices);
 	BOOST_TEST(dominatorFinder.immediateDominators() == test.expectedIdom);
 	BOOST_TEST(dominatorFinder.dominatorTree() == test.expectedDominatorTree);
@@ -533,7 +533,7 @@ BOOST_FIXTURE_TEST_CASE(ibsfquad, DominatorFixture)
 			{5, {6}}
 		}
 	);
-	DominatorFinder dominatorFinder(*test.entry, test.numVertices);
+	TestDominatorFinder dominatorFinder(*test.entry, test.numVertices);
 	BOOST_TEST(toDFSIndices(dominatorFinder.vertexIndices()) == test.expectedDFSIndices);
 	BOOST_TEST(dominatorFinder.immediateDominators() == test.expectedIdom);
 	BOOST_TEST(dominatorFinder.dominatorTree() == test.expectedDominatorTree);
@@ -573,7 +573,7 @@ BOOST_FIXTURE_TEST_CASE(sncaworst, DominatorFixture)
 			{2, {3}}
 		}
 	);
-	DominatorFinder dominatorFinder(*test.entry, test.numVertices);
+	TestDominatorFinder dominatorFinder(*test.entry, test.numVertices);
 	BOOST_TEST(toDFSIndices(dominatorFinder.vertexIndices()) == test.expectedDFSIndices);
 	BOOST_TEST(dominatorFinder.immediateDominators() == test.expectedIdom);
 	BOOST_TEST(dominatorFinder.dominatorTree() == test.expectedDominatorTree);
@@ -614,7 +614,7 @@ BOOST_FIXTURE_TEST_CASE(collect_all_dominators_of_a_vertex, DominatorFixture)
 		{}
 	);
 
-	DominatorFinder dominatorFinder(*test.entry, test.numVertices);
+	TestDominatorFinder dominatorFinder(*test.entry, test.numVertices);
 	BOOST_TEST(dominatorsByVertexName(dominatorFinder.dominatorsOf(*test.vertices["A"])) == std::vector<std::string>());
 	BOOST_TEST(dominatorsByVertexName(dominatorFinder.dominatorsOf(*test.vertices["B"])) == std::vector<std::string>({"A"}));
 	BOOST_TEST(dominatorsByVertexName(dominatorFinder.dominatorsOf(*test.vertices["C"])) == std::vector<std::string>({"B", "A"}));
@@ -639,8 +639,8 @@ BOOST_FIXTURE_TEST_CASE(dominators_of_a_non_existent_vertex, DominatorFixture)
 		{}
 	);
 
-	DominatorFinder dominatorFinder(*test.entry, test.numVertices);
-	BOOST_CHECK_THROW(dominatorsByVertexName(dominatorFinder.dominatorsOf(Vertex{"Z", {}})), util::ElementNotFound);
+	TestDominatorFinder dominatorFinder(*test.entry, test.numVertices);
+	BOOST_CHECK_THROW(dominatorsByVertexName(dominatorFinder.dominatorsOf(TestVertex{"Z", {}})), util::ElementNotFound);
 }
 
 BOOST_FIXTURE_TEST_CASE(check_dominance, DominatorFixture)
@@ -712,7 +712,7 @@ BOOST_FIXTURE_TEST_CASE(check_dominance, DominatorFixture)
 
 	soltestAssert(expectedDominanceByVertex.size() == test.numVertices);
 
-	DominatorFinder dominatorFinder(*test.entry, test.numVertices);
+	TestDominatorFinder dominatorFinder(*test.entry, test.numVertices);
 
 	// Asserts that the indices are computed correctly, since we need a reverse map from indices to vertex name
 	// to retrieve the respective vertices in the test below.
@@ -752,8 +752,8 @@ BOOST_FIXTURE_TEST_CASE(check_dominance_of_non_existent_vertex, DominatorFixture
 		{}
 	);
 
-	DominatorFinder dominatorFinder(*test.entry, test.numVertices);
-	BOOST_CHECK_THROW(dominatorFinder.dominates(Vertex{"Z", {}}, *test.vertices["A"]), util::ElementNotFound);
+	TestDominatorFinder dominatorFinder(*test.entry, test.numVertices);
+	BOOST_CHECK_THROW(dominatorFinder.dominates(TestVertex{"Z", {}}, *test.vertices["A"]), util::ElementNotFound);
 }
 
 

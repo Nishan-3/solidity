@@ -39,24 +39,24 @@
 namespace solidity::yul
 {
 
-template<typename Vertex, typename ForEachSuccessor>
-class Dominator
+template<typename V, typename ForEachSuccessor>
+class DominatorFinder
 {
 public:
 
-	Dominator(Vertex const& _entry, size_t _numVertices):
+	DominatorFinder(V const& _entry, size_t _numVertices):
 		m_vertices(_numVertices),
 		m_immediateDominators(findDominators(_entry, _numVertices))
 	{
 		buildDominatorTree();
 	}
 
-	std::vector<Vertex> const& vertices() const
+	std::vector<V> const& vertices() const
 	{
 		return m_vertices;
 	}
 
-	std::map<Vertex, size_t> const& vertexIndices() const
+	std::map<V, size_t> const& vertexIndices() const
 	{
 		return m_vertexIndices;
 	}
@@ -75,7 +75,7 @@ public:
 	/// through the path from ``_b`` to the entry node.
 	/// If ``_a`` is found, then it dominates ``_b``
 	/// otherwise it doesn't.
-	bool dominates(Vertex const& _a, Vertex const& _b) const
+	bool dominates(V const& _a, V const& _b) const
 	{
 		try {
 			solAssert(!m_vertexIndices.empty());
@@ -108,7 +108,7 @@ public:
 	/// Find all dominators of a node _v
 	/// This function returns the set of all dominators of a vertex in reverse order.
 	/// @note for a vertex ``_v``, the _v’s inclusion in the set of dominators of ``_v`` is implicit.
-	std::vector<Vertex const*>  dominatorsOf(Vertex const& _v) const
+	std::vector<V const*>  dominatorsOf(V const& _v) const
 	{
 		try
 		{
@@ -116,7 +116,7 @@ public:
 			solAssert(!m_vertexIndices.empty());
 			solAssert(!m_immediateDominators.empty());
 
-			std::vector<Vertex const*> dominators{};
+			std::vector<V const*> dominators{};
 			// No one dominates the entry vertex and we consider self-dominance implicit
 			// i.e. all nodes already dominates itself.
 			if (m_vertexIndices.at(_v) == 0)
@@ -162,7 +162,7 @@ public:
 		solAssert(_label[uIdx] <= _label[_vIdx]);
 	}
 
-	std::vector<size_t> findDominators(Vertex const& _entry, size_t numVertices)
+	std::vector<size_t> findDominators(V const& _entry, size_t numVertices)
 	{
 		solAssert(numVertices > 0);
 		// semi(w): The DFS index of the semidominator of ``w``.
@@ -198,10 +198,10 @@ public:
 			return _vIdx;
 		};
 
-		auto toIdx = [&](Vertex const& v) { return m_vertexIndices[v]; };
+		auto toIdx = [&](V const& v) { return m_vertexIndices[v]; };
 
 		// step 1
-		std::set<Vertex> visited;
+		std::set<V> visited;
 		// predecessors(w): The set of vertices ``v`` such that (``v``, ``w``) is an edge of the graph.
 		std::vector<std::set<size_t>> predecessors(numVertices);
 		// bucket(w): a set of vertices whose semidominator is ``w``
@@ -212,7 +212,7 @@ public:
 		// The number of vertices reached during the DFS.
 		// The vertices are indexed based on this number.
 		size_t dfIdx = 0;
-		auto dfs = [&](Vertex const& _v, auto _dfs) -> void {
+		auto dfs = [&](V const& _v, auto _dfs) -> void {
 			auto [_, inserted] = visited.insert(_v);
 			if (!inserted)
 				return;
@@ -221,7 +221,7 @@ public:
 			semi[dfIdx] = dfIdx;
 			label[dfIdx] = dfIdx;
 			dfIdx++;
-			ForEachSuccessor{}(_v, [&](Vertex const& w) {
+			ForEachSuccessor{}(_v, [&](V const& w) {
 				if (semi[dfIdx] == std::numeric_limits<size_t>::max())
 				{
 					parent[dfIdx] = m_vertexIndices[_v];
@@ -291,10 +291,10 @@ private:
 
 	/// Keep the list of vertices in the DFS order.
 	/// i.e. m_vertices[i] is the vertex whose DFS index is i.
-	std::vector<Vertex> m_vertices;
+	std::vector<V> m_vertices;
 
 	/// Maps Vertex to its DFS index.
-	std::map<Vertex, size_t> m_vertexIndices;
+	std::map<V, size_t> m_vertexIndices;
 
 	/// Immediate dominators by index.
 	/// Maps a Vertex based on its DFS index (i.e. array index) to its immediate dominator DFS index.
